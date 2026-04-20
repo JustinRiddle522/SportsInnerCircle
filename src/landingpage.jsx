@@ -570,10 +570,10 @@ export default function SportsInnerCircleLandingPage() {
                 </div>
                 <div style={{ width:52, height:2, borderRadius:99, background:"rgba(16,185,129,.45)", marginBottom:16 }}/>
                 {[
-                  { t:"Bettors who are tired of guessing and want a ", b:"real, repeatable system." },
-                  { t:"People who want ", b:"high-conviction picks", a:" with clear rules and discipline." },
-                  { t:"Serious bettors who care about ", b:"bankroll management and long-term profit." },
-                  { t:"Those who want to learn ", b:"how to think like an investor,", a:" not a gambler." },
+                    { t: "Investors who are tired of guessing and want a ", b: "structured, repeatable system." },
+  { t: "Individuals looking to ", b: "diversify their portfolios,", a: " without relying solely on traditional markets." },
+  { t: "Serious capital allocators who value ", b: "risk management and long-term consistency." },
+  { t: "Those seeking to ", b: "outperform traditional assets", a: " like stocks, real estate, and crypto." },
                 ].map((item,i)=>(
                   <div key={i} className="who-item" style={{ display:"flex", alignItems:"flex-start", gap:11, borderRadius:13, border:"1px solid rgba(16,185,129,.1)", background:"rgba(16,185,129,.04)", padding:"10px 13px", marginBottom:7 }}>
                     <div style={{ width:17, height:17, borderRadius:"50%", background:"rgba(16,185,129,.17)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginTop:1 }}>
