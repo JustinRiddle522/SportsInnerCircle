@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LandingPage from "./landingpage";
 import Application from "./application";
-import PrivacyPolicy from "./privacyPolicy";
+import PrivacyPolicy from "./PrivacyPolicy";
 
 function App() {
   return (
