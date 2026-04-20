@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import logoBright from "./assets/images/logo-bright.png"; // FIXED: Import logo like landing page
+import logoBright from "./assets/images/logo-bright.png";
 
 export default function ApplySurveyPage() {
   const G = "#D4AF37";
@@ -72,8 +72,8 @@ export default function ApplySurveyPage() {
       label: "What is your primary goal?",
       required: true,
       options: [
-        "Generate side income",              // MOVED TO TOP
-        "Looking for alternative investment", // REPLACED "Learn a system"
+        "Generate side income",
+        "Looking for alternative investment",
         "Scale capital",
         "Not sure",
       ],
@@ -119,7 +119,6 @@ export default function ApplySurveyPage() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const [animateIn, setAnimateIn] = useState(true);
-  const [phoneValid, setPhoneValid] = useState(false);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -156,19 +155,11 @@ export default function ApplySurveyPage() {
     return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
   }
 
-  function validatePhoneNumber(phone) {
-    const digits = phone.replace(/\D/g, "");
-    return digits.length === 10;
-  }
-
   function updateField(key, value) {
     if (key === "phone") {
-      const formatted = formatPhoneNumber(value);
-      setForm((prev) => ({ ...prev, [key]: formatted }));
-      setPhoneValid(validatePhoneNumber(formatted));
-    } else {
-      setForm((prev) => ({ ...prev, [key]: value }));
+      value = formatPhoneNumber(value);
     }
+    setForm((prev) => ({ ...prev, [key]: value }));
     setError("");
   }
 
@@ -349,10 +340,6 @@ export default function ApplySurveyPage() {
   }
 
   function renderContactBlock() {
-    const rawDigits = form.phone.replace(/\D/g, "");
-    const isValidPhone = rawDigits.length === 10;
-    const showPhoneError = form.phone && !isValidPhone && rawDigits.length > 0;
-
     return (
       <div
         style={{
@@ -401,23 +388,10 @@ export default function ApplySurveyPage() {
             value={form.phone}
             onChange={(e) => updateField("phone", e.target.value)}
             placeholder="ex: (248) 555-1234"
-            style={{
-              ...inputStyle,
-              borderColor: showPhoneError ? "rgba(255,80,80,.5)" : isValidPhone && form.phone ? "rgba(16,185,129,.5)" : "rgba(212,175,55,.16)",
-            }}
+            style={inputStyle}
             autoComplete="tel"
             inputMode="tel"
           />
-          {showPhoneError && (
-            <div style={{ marginTop: 6, fontSize: 11, color: "#f87171" }}>
-              Please enter a valid 10-digit phone number
-            </div>
-          )}
-          {isValidPhone && form.phone && !showPhoneError && (
-            <div style={{ marginTop: 6, fontSize: 11, color: "#10b981" }}>
-              ✓ Phone number verified
-            </div>
-          )}
         </div>
 
         <div>
@@ -754,12 +728,11 @@ export default function ApplySurveyPage() {
                   }}
                 />
                 <div style={{ minWidth: 0 }}>
-                  {/* REMOVED: "Private Application" yellow text */}
                   <div
                     className="survey-heading"
                     style={{
                       color: "#fff",
-                      fontSize: 24, // MADE BIGGER
+                      fontSize: 24,
                       fontWeight: 900,
                       textTransform: "uppercase",
                       letterSpacing: "-.02em",
