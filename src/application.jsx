@@ -119,6 +119,7 @@ export default function ApplySurveyPage() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const [animateIn, setAnimateIn] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -208,13 +209,88 @@ export default function ApplySurveyPage() {
     return true;
   }
 
-  function goNext() {
+  // Format the application data into a beautiful Discord message
+  function formatApplicationForDiscord() {
+    const timestamp = new Date().toLocaleString();
+    return [
+      "NEW APPLICATION",
+      "",
+      "--- APPLICANT ---",
+      "Name: " + form.fullName,
+      "Email: " + form.email,
+      "Phone: " + form.phone,
+      "",
+      "--- FINANCIALS ---",
+      "Liquid Capital: " + form.liquidCapital,
+      "Willing to Allocate: " + form.allocation,
+      "Annual Income: " + form.annualIncome,
+      "",
+      "--- BETTING & GOALS ---",
+      "Experience: " + form.bettingExperience,
+      "Primary Goal: " + form.primaryGoal,
+      "Involvement: " + form.involvement,
+      "Preferred Contact: " + form.contactMethod,
+      "",
+      "--- WHY APPLYING ---",
+      (form.whyApplying || "No reason provided"),
+      "",
+      "Submitted: " + timestamp,
+    ].join("\n");
+  }
+
+  // Send directly to Discord Webhook
+  async function sendToIFTTT(formattedMessage) {
+    const DISCORD_WEBHOOK = "https://discordapp.com/api/webhooks/1495921841565335585/ZvOj8LP2c_j6G5kUdBIcQGIyp06F1EzSYxqM_PF2Yt7vSohtsN8eBkUdZ1yfDX7L84Jh";
+    const payload = JSON.stringify({ content: formattedMessage });
+    
+    console.log("=== DISCORD DEBUG ===");
+    console.log("URL:", DISCORD_WEBHOOK);
+    console.log("Payload:", payload);
+
+    try {
+      const response = await fetch(DISCORD_WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      });
+
+      console.log("Response status:", response.status);
+      console.log("Response ok:", response.ok);
+
+      const responseText = await response.text();
+      console.log("Response body:", responseText);
+
+      if (response.ok) {
+        console.log("✅ Sent to Discord successfully");
+        return true;
+      } else {
+        console.error("❌ Discord rejected the request:", response.status, responseText);
+        return false;
+      }
+    } catch (error) {
+      console.error("❌ Fetch error:", error.message);
+      return false;
+    }
+  }
+
+  async function goNext() {
     if (!validateCurrentQuestion()) return;
 
     if (currentIndex === totalQuestions - 1) {
-      console.log("Application submitted:", form);
-      setSubmitted(true);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      setIsSubmitting(true);
+      
+      const discordMessage = formatApplicationForDiscord();
+      const sent = await sendToIFTTT(discordMessage);
+      
+      setIsSubmitting(false);
+      
+      if (sent) {
+        console.log("Application submitted:", form);
+        setSubmitted(true);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        setError("There was an issue submitting your application. Please try again.");
+      }
       return;
     }
 
@@ -837,7 +913,6 @@ export default function ApplySurveyPage() {
             ) : null}
           </div>
 
-          {/* FIXED: Mobile button order - Continue above Back on mobile */}
           <div
             className="survey-footer"
             style={{
@@ -853,6 +928,7 @@ export default function ApplySurveyPage() {
             <button
               type="button"
               onClick={goNext}
+              disabled={isSubmitting}
               style={{
                 ...buttonBase,
                 background: `linear-gradient(135deg, ${GL}, ${G}, #b8860b)`,
@@ -860,21 +936,25 @@ export default function ApplySurveyPage() {
                 boxShadow: "0 12px 34px rgba(212,175,55,.24)",
                 transform: "translateZ(0)",
                 flex: 1,
+                opacity: isSubmitting ? 0.7 : 1,
+                cursor: isSubmitting ? "wait" : "pointer",
               }}
             >
-              {currentIndex === totalQuestions - 1 ? "Submit Application" : "Continue"}
+              {isSubmitting 
+                ? "Submitting..." 
+                : (currentIndex === totalQuestions - 1 ? "Submit Application" : "Continue")}
             </button>
 
             <button
               type="button"
               onClick={goBack}
-              disabled={currentIndex === 0}
+              disabled={currentIndex === 0 || isSubmitting}
               style={{
                 ...buttonBase,
                 background: "rgba(255,255,255,.04)",
                 color: currentIndex === 0 ? "rgba(255,255,255,.22)" : "#fff",
                 border: "1px solid rgba(255,255,255,.08)",
-                cursor: currentIndex === 0 ? "not-allowed" : "pointer",
+                cursor: currentIndex === 0 || isSubmitting ? "not-allowed" : "pointer",
                 flex: 1,
               }}
             >
