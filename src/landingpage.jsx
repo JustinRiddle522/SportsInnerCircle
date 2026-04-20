@@ -452,7 +452,7 @@ export default function SportsInnerCircleLandingPage() {
                 fontSize:11, fontWeight:800, letterSpacing:".22em", color:GL, textTransform:"uppercase"
               }}>
                 <span style={{ width:6, height:6, borderRadius:"50%", background:GL, boxShadow:`0 0 8px ${G}` }}/>
-                Exclusive Access • By Application Only
+                Exclusive Access Only
               </div>
 
               <h1 className="r1" style={{ fontSize:"clamp(38px,6.5vw,80px)", fontWeight:900, lineHeight:.92, textTransform:"uppercase", letterSpacing:"-.03em", color:"#fff", margin:"0 0 14px" }}>
@@ -605,7 +605,7 @@ export default function SportsInnerCircleLandingPage() {
                 padding:"7px 20px", marginBottom:20,
                 fontSize:11, fontWeight:800, letterSpacing:".22em", color:GL, textTransform:"uppercase" }}>
                 <span style={{ width:6, height:6, borderRadius:"50%", background:GL, boxShadow:`0 0 8px ${G}` }}/>
-                Limited Slots | Once it's full, it's full
+                Limited Slots
               </div>
 
               <h2 style={{ fontSize:"clamp(34px,5.5vw,68px)", fontWeight:900, textTransform:"uppercase", letterSpacing:"-.03em", color:"#fff", margin:"0 0 10px" }}>
@@ -649,7 +649,7 @@ export default function SportsInnerCircleLandingPage() {
               </a>
               {/* UPDATED: Changed text to "once it's full, it's full" */}
               <p style={{ marginTop:12, fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:".18em", color:"rgba(212,175,55,.32)" }}>
-                When it's full, it's full. No exceptions.
+                Once Its Full, Its Full.
               </p>
             </div>
           </div>

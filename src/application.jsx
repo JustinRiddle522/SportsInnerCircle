@@ -837,6 +837,7 @@ export default function ApplySurveyPage() {
             ) : null}
           </div>
 
+          {/* FIXED: Mobile button order - Continue above Back on mobile */}
           <div
             className="survey-footer"
             style={{
@@ -846,8 +847,24 @@ export default function ApplySurveyPage() {
               justifyContent: "space-between",
               gap: 14,
               flexWrap: "wrap",
+              flexDirection: "row-reverse",
             }}
           >
+            <button
+              type="button"
+              onClick={goNext}
+              style={{
+                ...buttonBase,
+                background: `linear-gradient(135deg, ${GL}, ${G}, #b8860b)`,
+                color: "#05030A",
+                boxShadow: "0 12px 34px rgba(212,175,55,.24)",
+                transform: "translateZ(0)",
+                flex: 1,
+              }}
+            >
+              {currentIndex === totalQuestions - 1 ? "Submit Application" : "Continue"}
+            </button>
+
             <button
               type="button"
               onClick={goBack}
@@ -858,23 +875,10 @@ export default function ApplySurveyPage() {
                 color: currentIndex === 0 ? "rgba(255,255,255,.22)" : "#fff",
                 border: "1px solid rgba(255,255,255,.08)",
                 cursor: currentIndex === 0 ? "not-allowed" : "pointer",
+                flex: 1,
               }}
             >
               Back
-            </button>
-
-            <button
-              type="button"
-              onClick={goNext}
-              style={{
-                ...buttonBase,
-                background: `linear-gradient(135deg, ${GL}, ${G}, #b8860b)`,
-                color: "#05030A",
-                boxShadow: "0 12px 34px rgba(212,175,55,.24)",
-                transform: "translateZ(0)",
-              }}
-            >
-              {currentIndex === totalQuestions - 1 ? "Submit Application" : "Continue"}
             </button>
           </div>
         </div>
