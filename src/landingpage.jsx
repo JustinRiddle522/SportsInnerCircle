@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import justinImg from "./assets/images/Justin.jpg";
 import nickImg from "./assets/images/Nick.jpg";
-import logoImg from "./assets/images/logo-bright.png"; // Use a bright/light version of the logo for dark backgrounds
+import logoImg from "./assets/images/logo-bright.png";
 
 /* ─── Count-up hook ─── */
 function useCountUp(target, duration = 2000, format = (v) => v, startDelay = 0) {
@@ -301,6 +301,254 @@ function LiveGraph() {
   );
 }
 
+/* ─── Compound Growth Chart (Table) ─── */
+function CompoundGrowthChart({ G, GL }) {
+  const [status, setStatus] = useState("loading");
+  const [monthlyPL, setMonthlyPL] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(SHEET_CSV_URL, { cache: "no-store" });
+        if (!res.ok) throw new Error();
+        const csv = await res.text();
+        const data = parseCSVForMonthly(csv);
+        if (!cancelled && data.length > 0) {
+          setMonthlyPL(data);
+          setStatus("ok");
+        } else if (!cancelled) setStatus("error");
+      } catch {
+        if (!cancelled) setStatus("error");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (status === "loading") {
+    return (
+      <div style={{ width:"100%", height:100, display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <div style={{ fontSize:12, color:"rgba(16,185,129,0.45)", letterSpacing:".12em", textTransform:"uppercase" }}>
+          Loading growth data...
+        </div>
+      </div>
+    );
+  }
+  if (status === "error") {
+    return (
+      <div style={{ width:"100%", height:80, display:"flex", alignItems:"center", justifyContent:"center" }}>
+        <div style={{ fontSize:12, color:"rgba(255,100,100,0.6)" }}>Could not load live data</div>
+      </div>
+    );
+  }
+
+  const START = 10000;
+  const unitPct = 0.05;
+  const maxUnitDollar = 5000;
+  let bankroll = START;
+  const compRows = [];
+  monthlyPL.forEach((m, i) => {
+    const beginning = bankroll;
+    const unitDollar = Math.min(bankroll * unitPct, maxUnitDollar);
+    const profit = m.pl * unitDollar;
+    bankroll = bankroll + profit;
+    const isFinal = i === monthlyPL.length - 1;
+    const [mon, yr] = m.label.split(" ");
+    const prevYr = i > 0 ? monthlyPL[i-1].label.split(" ")[1] : null;
+    compRows.push({ mon, yr, beginning, unitDollar, pl: m.pl, profit, ending: bankroll, isFinal, isNewYear: yr !== prevYr });
+  });
+  const finalBankroll = bankroll;
+  const totalReturn = ((finalBankroll - START) / START * 100).toFixed(2);
+
+  const fmtMoney = (n) => {
+    const abs = Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return (n < 0 ? "-$" : "$") + abs;
+  };
+
+  return (
+    <div style={{ width:"100%", borderRadius:16, overflow:"hidden", border:"1px solid #2a2d3a", background:"#1a1d27" }}>
+      <div style={{ padding:"14px 20px 12px", borderBottom:"1px solid #2a2d3a", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:10 }}>
+        <div>
+          <div style={{ fontSize:14, fontWeight:700, color:"#f1f5f9" }}>Compounding Tracker</div>
+          <div style={{ fontSize:11, color:"#475569", marginTop:2 }}>5% of bankroll per unit · $5,000 max unit size · compounds monthly</div>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:20, flexWrap:"wrap" }}>
+          <div style={{ fontSize:12, color:"#64748b" }}>Starting Bankroll <span style={{ fontWeight:700, color:"#e2e8f0", marginLeft:6 }}>$10,000</span></div>
+          <div style={{ fontSize:12, color:"#64748b" }}>Final: <span style={{ fontWeight:800, color:"#10b981" }}>{fmtMoney(finalBankroll)}</span></div>
+          <div style={{ fontSize:12, color:"#64748b" }}>Return: <span style={{ fontWeight:800, color:"#10b981" }}>+{totalReturn}%</span></div>
+        </div>
+      </div>
+      <div style={{ overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
+        <table style={{ width:"100%", borderCollapse:"collapse", minWidth:620 }}>
+          <thead>
+            <tr style={{ background:"#151821" }}>
+              {[
+                { h:"YEAR", a:"left" }, { h:"MONTH", a:"left" },
+                { h:"BEGINNING BANKROLL", a:"right" }, { h:"UNIT %", a:"center" },
+                { h:"UNIT $", a:"right" }, { h:"UNITS WON", a:"right" },
+                { h:"PROFIT", a:"right" }, { h:"ENDING BANKROLL", a:"right" },
+              ].map(col=>(
+                <th key={col.h} style={{ padding:"9px 14px", fontSize:10, fontWeight:700, color:"#475569", textTransform:"uppercase", letterSpacing:"0.06em", textAlign:col.a, borderBottom:"1px solid #2a2d3a", whiteSpace:"nowrap" }}>{col.h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {compRows.map((row, i) => {
+              const pos = row.profit >= 0;
+              const c = pos ? "#10b981" : "#f87171";
+              return (
+                <React.Fragment key={i}>
+                  {row.isNewYear && i > 0 && (
+                    <tr><td colSpan={8} style={{ padding:0, background:"#0a0d14", height:3, borderTop:"2px solid #2a2d3a", borderBottom:"2px solid #2a2d3a" }}/></tr>
+                  )}
+                  <tr style={{ borderBottom:"1px solid #1e2435", background: row.isFinal ? "rgba(16,185,129,0.04)" : "transparent" }}
+                    onMouseEnter={e=>e.currentTarget.style.background=row.isFinal?"rgba(16,185,129,0.07)":"#1e2435"}
+                    onMouseLeave={e=>e.currentTarget.style.background=row.isFinal?"rgba(16,185,129,0.04)":"transparent"}>
+                    <td style={{ padding:"9px 14px", fontSize:12, fontWeight:700, color:"#475569" }}>
+                      {row.isNewYear ? <span style={{ background:"#1e293b", borderRadius:4, padding:"2px 8px", fontSize:11 }}>{row.yr}</span> : ""}
+                    </td>
+                    <td style={{ padding:"9px 14px", fontSize:13, fontWeight:600, color:"#e2e8f0" }}>
+                      {row.mon}
+                      {row.isFinal ? <span style={{ display:"block", fontSize:10, background:"#422006", color:"#f59e0b", borderRadius:3, padding:"1px 5px", fontWeight:700, marginTop:3, width:"fit-content" }}>so far</span> : ""}
+                    </td>
+                    <td style={{ padding:"9px 14px", fontSize:12, color:c, textAlign:"right", fontWeight:600 }}>{fmtMoney(row.beginning)}</td>
+                    <td style={{ padding:"9px 14px", fontSize:12, color:"#64748b", textAlign:"center" }}>5.00%</td>
+                    <td style={{ padding:"9px 14px", fontSize:12, color:"#94a3b8", textAlign:"right" }}>{fmtMoney(row.unitDollar)}</td>
+                    <td style={{ padding:"9px 14px", fontSize:12, fontWeight:600, color:c, textAlign:"right" }}>{row.pl >= 0 ? "+" : ""}{row.pl.toFixed(2)}</td>
+                    <td style={{ padding:"9px 14px", fontSize:12, fontWeight:600, color:c, textAlign:"right" }}>{pos ? "+" : ""}{fmtMoney(row.profit)}</td>
+                    <td style={{ padding:"9px 14px", fontSize:14, fontWeight:800, color:c, textAlign:"right" }}>{fmtMoney(row.ending)}</td>
+                  </tr>
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function parseCSVForMonthly(csv) {
+  const rows = csv.split("\n").map(r => r.split(",").map(c => c.replace(/^"|"$/g, "").trim()));
+  const MN_SHORT = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let dataStart = -1;
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i][1] && rows[i][1].trim() === "1") { dataStart = i; break; }
+  }
+  if (dataStart < 0) return [];
+  const monthSums = {};
+  for (let r = dataStart; r < rows.length; r++) {
+    const row = rows[r];
+    if (!row[1] || !/^\d+$/.test(row[1].trim())) continue;
+    const num = parseInt(row[1].trim());
+    const dateStr = (row[2] || "").trim();
+    const pts2 = dateStr.split("/");
+    if (pts2.length !== 3) continue;
+    const dd = parseInt(pts2[0]), mm = parseInt(pts2[1]), yyyy = parseInt(pts2[2]);
+    if (isNaN(dd) || isNaN(mm) || isNaN(yyyy)) continue;
+    let effMm = mm, effYyyy = yyyy;
+    if (num === 161 && mm === 1 && yyyy === 2025) { effMm = 2; effYyyy = 2025; }
+    const wl = (row[8] || "").trim().toLowerCase();
+    if (wl !== "win" && wl !== "loss") continue;
+    const ret = parseFloat(row[9]);
+    if (isNaN(ret)) continue;
+    const mkey = effYyyy + "-" + (effMm < 10 ? "0" : "") + effMm;
+    if (!monthSums[mkey]) monthSums[mkey] = { label: MN_SHORT[effMm] + " " + effYyyy, pl: 0 };
+    monthSums[mkey].pl += ret;
+  }
+  return Object.keys(monthSums).sort().map(k => ({ label: monthSums[k].label, pl: Math.round(monthSums[k].pl * 100) / 100 }));
+}
+
+
+/* ─── FAQ Section ─── */
+function FAQSection({ G, GL }) {
+  const [open, setOpen] = React.useState(null);
+  const faqs = [
+    {
+      q: "How does this work?",
+      a: "We use a structured, data-driven system to identify high-quality opportunities in the sports markets. You either follow the exact plays yourself, or we handle everything for you through our private capital option."
+    },
+    {
+      q: "Who is this for?",
+      a: "This is for individuals who want to diversify into alternative markets and are looking for a more structured, long-term approach. It works best for people with larger bankrolls who value consistency over quick wins."
+    },
+    {
+      q: "Is it hands off?",
+      a: "Yes, if you choose the Private Capital option. We handle the full execution for you. If you prefer more control, the Do It Yourself option lets you place the plays yourself."
+    },
+    {
+      q: "What happens after I apply?",
+      a: "We review your application to see if it's a good fit. If it is, we'll reach out, hop on a call, and walk you through everything and answer any questions before moving forward."
+    },
+    {
+      q: "What kind of returns can I expect?",
+      a: "Returns vary based on market conditions and execution, but all performance is fully tracked and transparent. We focus on long-term, consistent growth rather than short-term spikes."
+    },
+    {
+      q: "Is there risk involved?",
+      a: "Yes. Like any market, there is risk involved. Our system is built around managing that risk and maintaining consistency over time."
+    },
+    {
+      q: "What's the minimum to get started?",
+      a: "We work with a limited number of clients who meet our capital requirements. Apply to see if you qualify for access."
+    },
+  ];
+
+  return (
+    <section>
+      <div className="cg" style={{ borderRadius:36, padding:"52px 24px 56px", position:"relative" }}>
+        <div style={{ position:"absolute", inset:0, pointerEvents:"none", background:"radial-gradient(ellipse 50% 40% at 50% 50%, rgba(212,175,55,.025) 0%, transparent 70%)" }}/>
+        <div style={{ position:"relative", textAlign:"center", marginBottom:44 }}>
+          <div style={{ display:"inline-flex", alignItems:"center", gap:6, borderRadius:999,
+            border:"1px solid rgba(212,175,55,.25)", background:"rgba(212,175,55,.07)",
+            padding:"7px 18px", marginBottom:14,
+            fontSize:11, fontWeight:700, letterSpacing:".22em", color:GL, textTransform:"uppercase" }}>
+            Got Questions
+          </div>
+          <h2 style={{ fontSize:"clamp(28px,4.5vw,56px)", fontWeight:900, textTransform:"uppercase", letterSpacing:"-.03em", color:"#fff", margin:0 }}>
+            Frequently Asked <span style={{ color:GL }}>Questions</span>
+          </h2>
+          <div style={{ width:72, height:2, borderRadius:99, background:`linear-gradient(90deg,transparent,${G},transparent)`, margin:"12px auto 0" }}/>
+        </div>
+
+        <div style={{ maxWidth:760, margin:"0 auto", display:"flex", flexDirection:"column", gap:12 }}>
+          {faqs.map((faq, i) => {
+            const isOpen = open === i;
+            return (
+              <div key={i}
+                style={{ borderRadius:18, border:`1px solid ${isOpen ? "rgba(212,175,55,.35)" : "rgba(212,175,55,.14)"}`,
+                  background: isOpen ? "rgba(212,175,55,.06)" : "rgba(212,175,55,.03)",
+                  overflow:"hidden", transition:"border-color .2s, background .2s" }}>
+                <button
+                  onClick={() => setOpen(isOpen ? null : i)}
+                  style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16,
+                    padding:"20px 24px", background:"none", border:"none", cursor:"pointer", textAlign:"left" }}>
+                  <span style={{ fontSize:"clamp(14px,1.6vw,17px)", fontWeight:700, color:"#fff", lineHeight:1.4 }}>{faq.q}</span>
+                  <div style={{ width:28, height:28, borderRadius:"50%",
+                    background: isOpen ? `rgba(212,175,55,.2)` : "rgba(212,175,55,.08)",
+                    border:`1px solid ${isOpen ? "rgba(212,175,55,.5)" : "rgba(212,175,55,.2)"}`,
+                    display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0,
+                    transition:"all .2s", transform: isOpen ? "rotate(45deg)" : "rotate(0deg)" }}>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M6 1V11M1 6H11" stroke={GL} strokeWidth="1.8" strokeLinecap="round"/>
+                    </svg>
+                  </div>
+                </button>
+                {isOpen && (
+                  <div style={{ padding:"0 24px 22px" }}>
+                    <div style={{ height:1, background:"rgba(212,175,55,.12)", marginBottom:16 }}/>
+                    <p style={{ fontSize:14, lineHeight:1.8, color:"rgba(255,255,255,.55)", margin:0 }}>{faq.a}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function SportsInnerCircleLandingPage() {
   const founderCards = [
     {
@@ -511,7 +759,144 @@ export default function SportsInnerCircleLandingPage() {
 
         <div className="sdiv"/>
 
-        {/* WHO IS THIS FOR */}
+        {/* COMPOUND GROWTH — $10K → $250K+ */}
+        <section>
+          <div className="cg" style={{ borderRadius:36, overflow:"hidden", padding:"60px 24px 52px", position:"relative" }}>
+            {/* Ambient glow */}
+            <div style={{ position:"absolute", inset:0, pointerEvents:"none", background:"radial-gradient(ellipse 70% 60% at 50% 40%, rgba(16,185,129,.055) 0%, transparent 70%)" }}/>
+
+            <div style={{ position:"relative", textAlign:"center", marginBottom:48 }}>
+              <h2 style={{ fontSize:"clamp(30px,5.5vw,68px)", fontWeight:900, textTransform:"uppercase", letterSpacing:"-.03em", color:"#fff", margin:"0 0 10px", lineHeight:.95 }}>
+                If You Invested <span style={{ color:GL }}>$10K</span><br/>With Our System
+              </h2>
+              <p style={{ fontSize:"clamp(15px,1.8vw,22px)", fontWeight:700, color:"rgba(255,255,255,.5)", margin:"12px 0 0" }}>
+                In 16 months, that would have grown to <span style={{ color:"#10b981", fontWeight:900 }}>$250,000+</span>
+              </p>
+            </div>
+
+            {/* Live compound table */}
+            <CompoundGrowthChart G={G} GL={GL} />
+
+            {/* Disclaimer */}
+            <p style={{ textAlign:"center", fontSize:11, color:"rgba(255,255,255,.28)", marginTop:14, letterSpacing:".04em" }}>
+              Past performance does not guarantee future results.
+            </p>
+          </div>
+        </section>
+
+        <div className="sdiv"/>
+
+        {/* HOW TO WORK WITH US + APPLY */}
+        <section id="apply">
+          <div className="cg" style={{ borderRadius:36, overflow:"hidden", padding:"60px 24px 56px", position:"relative",
+            boxShadow:"0 0 80px rgba(212,175,55,.04), 0 28px 90px rgba(0,0,0,.65)" }}>
+            <div style={{ position:"absolute", inset:0, pointerEvents:"none", background:"radial-gradient(ellipse 60% 50% at 50% 50%, rgba(212,175,55,.035) 0%, transparent 70%)" }}/>
+
+            <div style={{ position:"relative", textAlign:"center", marginBottom:48 }}>
+              <div className="bdg" style={{ display:"inline-flex", alignItems:"center", gap:8, borderRadius:999,
+                border:"1px solid rgba(212,175,55,.32)", background:"rgba(212,175,55,.08)",
+                padding:"7px 20px", marginBottom:18,
+                fontSize:11, fontWeight:800, letterSpacing:".22em", color:GL, textTransform:"uppercase" }}>
+                <span style={{ width:6, height:6, borderRadius:"50%", background:GL, boxShadow:`0 0 8px ${G}` }}/>
+                Choose Your Path
+              </div>
+              <h2 style={{ fontSize:"clamp(30px,5.5vw,68px)", fontWeight:900, textTransform:"uppercase", letterSpacing:"-.03em", color:"#fff", margin:0, lineHeight:.95 }}>
+                How To <span style={{ color:GL }}>Work</span> With Us
+              </h2>
+              <div style={{ width:72, height:2, borderRadius:99, background:`linear-gradient(90deg,transparent,${G},transparent)`, margin:"14px auto 0" }}/>
+            </div>
+
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:22, maxWidth:900, margin:"0 auto 56px" }}>
+              <div className="yc" style={{ borderRadius:28, padding:"34px 28px", position:"relative", overflow:"hidden" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:20, marginTop:0 }}>
+                  <div style={{ width:46, height:46, borderRadius:14, background:"rgba(16,185,129,.12)", border:"1px solid rgba(16,185,129,.28)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3L19 7V11C19 15.4 15.5 19.4 11 20.5C6.5 19.4 3 15.4 3 11V7L11 3Z" stroke="#10b981" strokeWidth="1.6" fill="none" strokeLinejoin="round"/><path d="M8 11L10.5 13.5L14.5 8.5" stroke="#10b981" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </div>
+                  <div>
+                    <div style={{ fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:".14em", color:"#10b981", marginBottom:3 }}>Self-Run Access</div>
+                    <h3 style={{ fontSize:"clamp(20px,2.4vw,26px)", fontWeight:900, textTransform:"uppercase", letterSpacing:"-.02em", color:"#fff", margin:0 }}>Do It Yourself</h3>
+                  </div>
+                </div>
+                <div style={{ fontSize:13, fontWeight:700, textTransform:"uppercase", letterSpacing:".1em", color:"rgba(255,255,255,.4)", marginBottom:12 }}>This Is For You If...</div>
+                {[
+                  "You want to follow the same picks we use",
+                  "You're okay placing bets yourself",
+                  "You like having full control over everything",
+                ].map((item,i)=>(
+                  <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:11, borderRadius:12, border:"1px solid rgba(16,185,129,.14)", background:"rgba(16,185,129,.04)", padding:"10px 13px", marginBottom:8 }}>
+                    <div style={{ width:18, height:18, borderRadius:"50%", background:"rgba(16,185,129,.18)", border:"1px solid rgba(16,185,129,.3)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginTop:1 }}>
+                      <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4L3.5 6L6.5 2" stroke="#10b981" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </div>
+                    <p style={{ fontSize:13, lineHeight:1.6, color:"rgba(255,255,255,.65)", margin:0 }}>{item}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ borderRadius:28, padding:"34px 28px", position:"relative", overflow:"hidden",
+                background:"linear-gradient(135deg,rgba(20,14,4,.98),rgba(14,12,8,.98))",
+                border:"2px solid rgba(212,175,55,.35)",
+                boxShadow:"0 0 50px rgba(212,175,55,.08), 0 28px 80px rgba(0,0,0,.6)" }}>
+                {/* Invite Only — top-right corner tag matching card 1 layout */}
+                <div style={{ position:"absolute", top:0, right:0, display:"inline-flex", alignItems:"center", gap:5, background:`linear-gradient(135deg,${GL},${G})`, color:"#000", fontSize:9, fontWeight:900, textTransform:"uppercase", letterSpacing:".18em", padding:"6px 16px 6px 20px", borderBottomLeftRadius:16 }}>
+                  <span style={{ width:5, height:5, borderRadius:"50%", background:"rgba(0,0,0,.35)" }}/>
+                  Invite Only
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:20, marginTop:0 }}>
+                  <div style={{ width:46, height:46, borderRadius:14, background:"rgba(212,175,55,.1)", border:"1px solid rgba(212,175,55,.3)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 2L13.5 8H20L14.8 11.9L17 18L11 14.3L5 18L7.2 11.9L2 8H8.5L11 2Z" fill={GL} opacity=".85"/></svg>
+                  </div>
+                  <div>
+                    <div style={{ fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:".14em", color:GL, marginBottom:3 }}>Private Client</div>
+                    <h3 style={{ fontSize:"clamp(20px,2.4vw,26px)", fontWeight:900, textTransform:"uppercase", letterSpacing:"-.02em", color:"#fff", margin:0 }}>Done For You</h3>
+                  </div>
+                </div>
+                <div style={{ fontSize:13, fontWeight:700, textTransform:"uppercase", letterSpacing:".1em", color:"rgba(255,255,255,.4)", marginBottom:12 }}>This Is For You If...</div>
+                {[
+                  "You want everything handled for you",
+                  "You don't have time to place bets",
+                  "You want a simple, hands-off setup",
+                ].map((item,i)=>(
+                  <div key={i} style={{ display:"flex", alignItems:"flex-start", gap:11, borderRadius:12, border:"1px solid rgba(212,175,55,.15)", background:"rgba(212,175,55,.04)", padding:"10px 13px", marginBottom:8 }}>
+                    <div style={{ width:18, height:18, borderRadius:"50%", background:"rgba(212,175,55,.14)", border:"1px solid rgba(212,175,55,.3)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginTop:1 }}>
+                      <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4L3.5 6L6.5 2" stroke={GL} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </div>
+                    <p style={{ fontSize:13, lineHeight:1.6, color:"rgba(255,255,255,.65)", margin:0 }}>{item}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div style={{ width:"100%", height:1, background:"linear-gradient(90deg,transparent,rgba(212,175,55,.2),transparent)", marginBottom:52 }}/>
+
+            {/* Apply CTA */}
+            <div style={{ position:"relative", textAlign:"center" }}>
+              <h2 style={{ fontSize:"clamp(28px,5vw,60px)", fontWeight:900, textTransform:"uppercase", letterSpacing:"-.03em", color:"#fff", margin:"0 0 10px", lineHeight:.95 }}>
+                See If You Qualify<br/><span style={{ color:GL }}>To Work With Us</span>
+              </h2>
+              <p style={{ fontSize:"clamp(14px,1.6vw,18px)", fontWeight:700, color:"rgba(255,255,255,.5)", margin:"0 0 36px" }}>
+                Not everyone gets in. Apply and find out.
+              </p>
+              <a href="/application" className="gbtn"
+                style={{ display:"inline-flex", alignItems:"center", gap:12, borderRadius:999,
+                  background:`linear-gradient(135deg,${GL},${G},#b8860b)`,
+                  padding:"0 52px", height:70, fontSize:16, fontWeight:900,
+                  textTransform:"uppercase", letterSpacing:".12em", color:"#000",
+                  boxShadow:`0 12px 48px rgba(212,175,55,.45),0 4px 16px rgba(212,175,55,.2)` }}>
+                See If You Qualify
+                <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+                  <path d="M3 8.5H14M14 8.5L9.5 4M14 8.5L9.5 13" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </a>
+              <p style={{ marginTop:14, fontSize:11, fontWeight:800, textTransform:"uppercase", letterSpacing:".2em", color:"rgba(212,175,55,.5)", margin:"14px 0 0" }}>
+                Once It's Full, It's Full
+              </p>
+            </div>
+          </div>
+        </section>
+        <div className="sdiv"/>
+
+        {/* HOW TO WORK WITH US + APPLY */}
         <section>
           <div className="cg" style={{ borderRadius:36, overflow:"hidden", padding:"52px 24px", position:"relative" }}>
             <div style={{ position:"absolute", inset:0, pointerEvents:"none", overflow:"hidden", opacity:.04 }}>
@@ -521,7 +906,6 @@ export default function SportsInnerCircleLandingPage() {
                   animation:`drift ${6+i}s ease-in-out infinite ${i*.5}s` }}>{v}</div>
               ))}
             </div>
-
             <div style={{ position:"relative", textAlign:"center", marginBottom:44 }}>
               <div className="bdg" style={{ display:"inline-flex", alignItems:"center", gap:6, borderRadius:999,
                 border:"1px solid rgba(212,175,55,.25)", background:"rgba(212,175,55,.07)",
@@ -534,10 +918,7 @@ export default function SportsInnerCircleLandingPage() {
               </h2>
               <div style={{ width:72, height:2, borderRadius:99, background:`linear-gradient(90deg,transparent,${G},transparent)`, margin:"12px auto 0" }}/>
             </div>
-
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:18, maxWidth:940, margin:"0 auto" }}>
-
-              {/* NOT */}
               <div className="nc" style={{ borderRadius:28, padding:"26px 22px" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
                   <div style={{ width:34, height:34, borderRadius:"50%", background:"rgba(200,50,50,.14)", border:"1px solid rgba(200,50,50,.28)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
@@ -559,8 +940,6 @@ export default function SportsInnerCircleLandingPage() {
                   </div>
                 ))}
               </div>
-
-              {/* YES */}
               <div className="yc gg" style={{ borderRadius:28, padding:"26px 22px" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:10 }}>
                   <div style={{ width:34, height:34, borderRadius:"50%", background:"rgba(16,185,129,.12)", border:"1px solid rgba(16,185,129,.28)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
@@ -570,10 +949,10 @@ export default function SportsInnerCircleLandingPage() {
                 </div>
                 <div style={{ width:52, height:2, borderRadius:99, background:"rgba(16,185,129,.45)", marginBottom:16 }}/>
                 {[
-                    { t: "Investors who are tired of guessing and want a ", b: "structured, repeatable system." },
-  { t: "Individuals looking to ", b: "diversify their portfolios,", a: " without relying solely on traditional markets." },
-  { t: "Serious capital allocators who value ", b: "risk management and long-term consistency." },
-  { t: "Those seeking to ", b: "outperform traditional assets", a: " like stocks, real estate, and crypto." },
+                  { t: "Investors who are tired of guessing and want a ", b: "structured, repeatable system." },
+                  { t: "Individuals looking to ", b: "diversify their portfolios,", a: " without relying solely on traditional markets." },
+                  { t: "Serious capital allocators who value ", b: "risk management and long-term consistency." },
+                  { t: "Those seeking to ", b: "outperform traditional assets", a: " like stocks, real estate, and crypto." },
                 ].map((item,i)=>(
                   <div key={i} className="who-item" style={{ display:"flex", alignItems:"flex-start", gap:11, borderRadius:13, border:"1px solid rgba(16,185,129,.1)", background:"rgba(16,185,129,.04)", padding:"10px 13px", marginBottom:7 }}>
                     <div style={{ width:17, height:17, borderRadius:"50%", background:"rgba(16,185,129,.17)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginTop:1 }}>
@@ -585,72 +964,6 @@ export default function SportsInnerCircleLandingPage() {
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        </section>
-
-        <div className="sdiv"/>
-
-        {/* APPLY - Apply Button #1 */}
-        <section id="apply">
-          <div className="cg" style={{ borderRadius:36, overflow:"hidden", padding:"56px 24px", textAlign:"center", position:"relative",
-            boxShadow:"0 0 80px rgba(212,175,55,.04), 0 28px 90px rgba(0,0,0,.65)" }}>
-            <div style={{ position:"absolute", inset:0, pointerEvents:"none",
-              background:"radial-gradient(ellipse 60% 55% at 50% 50%, rgba(212,175,55,.045) 0%, transparent 70%)" }}/>
-
-            <div style={{ position:"relative" }}>
-              {/* UPDATED: Changed "Once It's Full, It's Closed" to "once it's full, it's full" */}
-              <div className="bdg" style={{ display:"inline-flex", alignItems:"center", gap:8, borderRadius:999,
-                border:"1px solid rgba(212,175,55,.32)", background:"rgba(212,175,55,.08)",
-                padding:"7px 20px", marginBottom:20,
-                fontSize:11, fontWeight:800, letterSpacing:".22em", color:GL, textTransform:"uppercase" }}>
-                <span style={{ width:6, height:6, borderRadius:"50%", background:GL, boxShadow:`0 0 8px ${G}` }}/>
-                Limited Slots
-              </div>
-
-              <h2 style={{ fontSize:"clamp(34px,5.5vw,68px)", fontWeight:900, textTransform:"uppercase", letterSpacing:"-.03em", color:"#fff", margin:"0 0 10px" }}>
-                Apply Here
-              </h2>
-              <p style={{ fontSize:"clamp(15px,1.8vw,20px)", fontWeight:700, color:GL, margin:"0 0 10px" }}>
-                See if you're a good fit.
-              </p>
-              <p style={{ fontSize:14, lineHeight:1.75, color:"rgba(255,255,255,.48)", maxWidth:580, margin:"0 auto 36px" }}>
-                We keep this exclusive on purpose. We are only opening a limited number of spots and every application is reviewed carefully.
-              </p>
-
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))", gap:12, maxWidth:720, margin:"0 auto 44px" }}>
-                {[
-                  { i:"🔒", l:"Limited Capacity",  d:"Spots close permanently when full." },
-                  { i:"👁",  l:"Reviewed Manually", d:"Every application gets personal attention." },
-                  { i:"🎯", l:"Not For Everyone",   d:"Only serious, committed bettors." },
-                ].map(x=>(
-                  <div key={x.l} className="brt" style={{ borderRadius:18, border:"1px solid rgba(212,175,55,.18)", background:"rgba(212,175,55,.04)", padding:"18px 14px", textAlign:"left" }}>
-                    <div style={{ fontSize:20, marginBottom:9 }}>{x.i}</div>
-                    <div style={{ fontSize:12, fontWeight:800, color:"#fff", textTransform:"uppercase", letterSpacing:".04em" }}>{x.l}</div>
-                    <div style={{ fontSize:12, color:"rgba(255,255,255,.38)", marginTop:5, lineHeight:1.55 }}>{x.d}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* APPLY BUTTON #1 - UPDATED: Changed button text to "Apply Here" */}
-              <a href="/application" className="gbtn"
-                style={{ display:"inline-flex", alignItems:"center", gap:12, borderRadius:999,
-                  background:`linear-gradient(135deg,${GL},${G},#b8860b)`,
-                  padding:"0 52px", height:70, fontSize:16, fontWeight:900,
-                  textTransform:"uppercase", letterSpacing:".12em", color:"#FFFFFF",
-                  boxShadow:`0 12px 48px rgba(212,175,55,.45),0 4px 16px rgba(212,175,55,.2)` }}>
-                <svg width="19" height="19" viewBox="0 0 19 19" fill="none">
-                  <path d="M9.5 2L12.1 7.2H18L13.3 10.8L15.2 17L9.5 13.5L3.8 17L5.7 10.8L1 7.2H6.9L9.5 2Z" fill="#FFFFFF" opacity=".85"/>
-                </svg>
-                Apply Here
-                <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
-                  <path d="M3 8.5H14M14 8.5L9.5 4M14 8.5L9.5 13" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </a>
-              {/* UPDATED: Changed text to "once it's full, it's full" */}
-              <p style={{ marginTop:12, fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:".18em", color:"rgba(212,175,55,.32)" }}>
-                Once Its Full, Its Full.
-              </p>
             </div>
           </div>
         </section>
@@ -756,35 +1069,19 @@ export default function SportsInnerCircleLandingPage() {
                     EXTREMELY LIMITED
                   </div>
                   
-                  <div style={{ fontSize:14, color:"rgba(255,255,255,.6)", lineHeight:1.65, marginBottom:16, textAlign:"center" }}>
+                  <div style={{ fontSize:14, color:"rgba(255,255,255,.6)", lineHeight:1.65, textAlign:"center" }}>
                     We are intentionally keeping slots tight, which means not everyone who applies will be accepted.
-                  </div>
-                  
-                  <div style={{ marginTop:16 }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"rgba(255,255,255,.5)", marginBottom:6 }}>
-                      <span>Spots Remaining</span>
-                      <span style={{ color:"#ff6666", fontWeight:800 }}>Only 3 left</span>
-                    </div>
-                    <div style={{ height:8, background:"rgba(255,80,80,0.2)", borderRadius:99, overflow:"hidden" }}>
-                      <div style={{ width:"15%", height:"100%", background:"linear-gradient(90deg, #ff6666, #ff4444)", borderRadius:99 }} />
-                    </div>
                   </div>
                 </div>
               </div>
             </div>
-            <div style={{ marginTop:32 }}>
-              {/* APPLY BUTTON #2 - UPDATED: Changed button text to "Apply Here" */}
-              <a href="/application" className="gbtn"
-                style={{ display:"inline-flex", alignItems:"center", gap:8, borderRadius:999,
-                  background:`linear-gradient(135deg,${GL},${G})`,
-                  padding:"0 34px", height:54, fontSize:13, fontWeight:900,
-                  textTransform:"uppercase", letterSpacing:".1em", color:"#FFFFFF",
-                  boxShadow:`0 8px 32px rgba(212,175,55,.35)` }}>
-                Apply Here
-              </a>
-            </div>
           </div>
         </section>
+
+        <div className="sdiv"/>
+
+        {/* FAQ */}
+        <FAQSection G={G} GL={GL} />
 
         {/* FOOTER */}
         <footer style={{ paddingTop:28 }}>
