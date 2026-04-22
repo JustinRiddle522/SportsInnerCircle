@@ -652,6 +652,9 @@ export default function SportsInnerCircleLandingPage() {
         .contact-btn{transition:all 0.2s ease;}
 
         .who-item { transition: none; }
+        @media (max-width: 600px) {
+          .hero-inner { padding-top: 36px !important; padding-bottom: 28px !important; }
+        }
       `}</style>
 
       {/* Ambient */}
@@ -678,7 +681,7 @@ export default function SportsInnerCircleLandingPage() {
         {/* HERO */}
         <section>
           <div className="cg" style={{ borderRadius:36, overflow:"hidden" }}>
-            <div style={{ position:"relative", textAlign:"center", padding:"56px 24px 48px", maxWidth:860, margin:"0 auto" }}>
+            <div className="hero-inner" style={{ position:"relative", textAlign:"center", padding:"56px 24px 48px", maxWidth:860, margin:"0 auto" }}>
 
               <div className="r0" style={{ marginBottom:22, display:"flex", justifyContent:"center" }}>
                 <div style={{
@@ -743,7 +746,7 @@ export default function SportsInnerCircleLandingPage() {
             </div>
 
             {/* Live Graph Panel */}
-            <div style={{ padding:"0 16px 24px" }}>
+            <div style={{ padding:"0 16px 16px" }}>
               <div style={{ borderRadius:22, overflow:"hidden", background:"rgba(5,7,9,.96)", border:"1px solid rgba(16,185,129,.18)", boxShadow:"0 0 40px rgba(16,185,129,.06)", padding:"14px 6px 8px" }}>
                 <div style={{ paddingLeft:14, marginBottom:6 }}>
                   <div style={{ fontSize:13, fontWeight:700, color:"rgba(255,255,255,.85)" }}>Profit Trajectory</div>
@@ -793,21 +796,17 @@ export default function SportsInnerCircleLandingPage() {
             <div style={{ position:"absolute", inset:0, pointerEvents:"none", background:"radial-gradient(ellipse 60% 50% at 50% 50%, rgba(212,175,55,.035) 0%, transparent 70%)" }}/>
 
             <div style={{ position:"relative", textAlign:"center", marginBottom:48 }}>
-              <div className="bdg" style={{ display:"inline-flex", alignItems:"center", gap:8, borderRadius:999,
-                border:"1px solid rgba(212,175,55,.32)", background:"rgba(212,175,55,.08)",
-                padding:"7px 20px", marginBottom:18,
-                fontSize:11, fontWeight:800, letterSpacing:".22em", color:GL, textTransform:"uppercase" }}>
-                <span style={{ width:6, height:6, borderRadius:"50%", background:GL, boxShadow:`0 0 8px ${G}` }}/>
-                Choose Your Path
-              </div>
-              <h2 style={{ fontSize:"clamp(30px,5.5vw,68px)", fontWeight:900, textTransform:"uppercase", letterSpacing:"-.03em", color:"#fff", margin:0, lineHeight:.95 }}>
-                How To <span style={{ color:GL }}>Work</span> With Us
+              <h2 style={{ fontSize:"clamp(30px,5.5vw,68px)", fontWeight:900, textTransform:"uppercase", letterSpacing:"-.03em", color:"#fff", margin:"0 0 12px", lineHeight:.95 }}>
+                See If You Qualify<br/><span style={{ color:GL }}>To Work With Us</span>
               </h2>
-              <div style={{ width:72, height:2, borderRadius:99, background:`linear-gradient(90deg,transparent,${G},transparent)`, margin:"14px auto 0" }}/>
+              <p style={{ fontSize:"clamp(14px,1.6vw,18px)", fontWeight:700, color:"rgba(255,255,255,.5)", margin:0 }}>
+                Not everyone gets in. Apply and find out.
+              </p>
             </div>
 
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:22, maxWidth:900, margin:"0 auto 56px" }}>
-              <div className="yc" style={{ borderRadius:28, padding:"34px 28px", position:"relative", overflow:"hidden" }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:22, maxWidth:900, margin:"0 auto" }}>
+              {/* Option 1 */}
+              <div className="yc" style={{ borderRadius:28, padding:"34px 28px", position:"relative", overflow:"hidden", display:"flex", flexDirection:"column" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:20, marginTop:0 }}>
                   <div style={{ width:46, height:46, borderRadius:14, background:"rgba(16,185,129,.12)", border:"1px solid rgba(16,185,129,.28)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                     <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3L19 7V11C19 15.4 15.5 19.4 11 20.5C6.5 19.4 3 15.4 3 11V7L11 3Z" stroke="#10b981" strokeWidth="1.6" fill="none" strokeLinejoin="round"/><path d="M8 11L10.5 13.5L14.5 8.5" stroke="#10b981" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -830,14 +829,29 @@ export default function SportsInnerCircleLandingPage() {
                     <p style={{ fontSize:13, lineHeight:1.6, color:"rgba(255,255,255,.65)", margin:0 }}>{item}</p>
                   </div>
                 ))}
+                <div style={{ marginTop:"auto", paddingTop:20 }}>
+                  <a href="/application" className="gbtn"
+                    style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, borderRadius:999,
+                      background:`linear-gradient(135deg,${GL},${G},#b8860b)`,
+                      height:52, fontSize:13, fontWeight:900,
+                      textTransform:"uppercase", letterSpacing:".1em", color:"#fff",
+                      boxShadow:`0 8px 32px rgba(212,175,55,.35)` }}>
+                    See If You Qualify
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2.5 7.5H12.5M12.5 7.5L8.5 3.5M12.5 7.5L8.5 11.5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </a>
+                  <p style={{ marginTop:10, fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:".16em", color:"rgba(212,175,55,.4)", textAlign:"center", margin:"10px 0 0" }}>
+                    Once It's Full, It's Full
+                  </p>
+                </div>
               </div>
 
+              {/* Option 2 */}
               <div style={{ borderRadius:28, padding:"34px 28px", position:"relative", overflow:"hidden",
                 background:"linear-gradient(135deg,rgba(20,14,4,.98),rgba(14,12,8,.98))",
                 border:"2px solid rgba(212,175,55,.35)",
-                boxShadow:"0 0 50px rgba(212,175,55,.08), 0 28px 80px rgba(0,0,0,.6)" }}>
-                {/* Invite Only — top-right corner tag matching card 1 layout */}
-                <div style={{ position:"absolute", top:0, right:0, display:"inline-flex", alignItems:"center", gap:5, background:`linear-gradient(135deg,${GL},${G})`, color:"#000", fontSize:9, fontWeight:900, textTransform:"uppercase", letterSpacing:".18em", padding:"6px 16px 6px 20px", borderBottomLeftRadius:16 }}>
+                boxShadow:"0 0 50px rgba(212,175,55,.08), 0 28px 80px rgba(0,0,0,.6)",
+                display:"flex", flexDirection:"column" }}>
+                <div style={{ position:"absolute", top:0, right:0, display:"inline-flex", alignItems:"center", gap:5, background:`linear-gradient(135deg,${GL},${G})`, color:"#fff", fontSize:9, fontWeight:900, textTransform:"uppercase", letterSpacing:".18em", padding:"6px 16px 6px 20px", borderBottomLeftRadius:16 }}>
                   <span style={{ width:5, height:5, borderRadius:"50%", background:"rgba(0,0,0,.35)" }}/>
                   Invite Only
                 </div>
@@ -863,40 +877,27 @@ export default function SportsInnerCircleLandingPage() {
                     <p style={{ fontSize:13, lineHeight:1.6, color:"rgba(255,255,255,.65)", margin:0 }}>{item}</p>
                   </div>
                 ))}
+                <div style={{ marginTop:"auto", paddingTop:20 }}>
+                  <a href="/application" className="gbtn"
+                    style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, borderRadius:999,
+                      background:`linear-gradient(135deg,${GL},${G},#b8860b)`,
+                      height:52, fontSize:13, fontWeight:900,
+                      textTransform:"uppercase", letterSpacing:".1em", color:"#fff",
+                      boxShadow:`0 8px 32px rgba(212,175,55,.4)` }}>
+                    See If You Qualify
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2.5 7.5H12.5M12.5 7.5L8.5 3.5M12.5 7.5L8.5 11.5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </a>
+                  <p style={{ marginTop:10, fontSize:10, fontWeight:800, textTransform:"uppercase", letterSpacing:".16em", color:"rgba(212,175,55,.4)", textAlign:"center", margin:"10px 0 0" }}>
+                    Once It's Full, It's Full
+                  </p>
+                </div>
               </div>
-            </div>
-
-            {/* Divider */}
-            <div style={{ width:"100%", height:1, background:"linear-gradient(90deg,transparent,rgba(212,175,55,.2),transparent)", marginBottom:52 }}/>
-
-            {/* Apply CTA */}
-            <div style={{ position:"relative", textAlign:"center" }}>
-              <h2 style={{ fontSize:"clamp(28px,5vw,60px)", fontWeight:900, textTransform:"uppercase", letterSpacing:"-.03em", color:"#fff", margin:"0 0 10px", lineHeight:.95 }}>
-                See If You Qualify<br/><span style={{ color:GL }}>To Work With Us</span>
-              </h2>
-              <p style={{ fontSize:"clamp(14px,1.6vw,18px)", fontWeight:700, color:"rgba(255,255,255,.5)", margin:"0 0 36px" }}>
-                Not everyone gets in. Apply and find out.
-              </p>
-              <a href="/application" className="gbtn"
-                style={{ display:"inline-flex", alignItems:"center", gap:12, borderRadius:999,
-                  background:`linear-gradient(135deg,${GL},${G},#b8860b)`,
-                  padding:"0 52px", height:70, fontSize:16, fontWeight:900,
-                  textTransform:"uppercase", letterSpacing:".12em", color:"#000",
-                  boxShadow:`0 12px 48px rgba(212,175,55,.45),0 4px 16px rgba(212,175,55,.2)` }}>
-                See If You Qualify
-                <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
-                  <path d="M3 8.5H14M14 8.5L9.5 4M14 8.5L9.5 13" stroke="#000" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </a>
-              <p style={{ marginTop:14, fontSize:11, fontWeight:800, textTransform:"uppercase", letterSpacing:".2em", color:"rgba(212,175,55,.5)", margin:"14px 0 0" }}>
-                Once It's Full, It's Full
-              </p>
             </div>
           </div>
         </section>
         <div className="sdiv"/>
 
-        {/* HOW TO WORK WITH US + APPLY */}
+        {/* WHO IS THIS FOR */}
         <section>
           <div className="cg" style={{ borderRadius:36, overflow:"hidden", padding:"52px 24px", position:"relative" }}>
             <div style={{ position:"absolute", inset:0, pointerEvents:"none", overflow:"hidden", opacity:.04 }}>
