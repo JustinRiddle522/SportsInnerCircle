@@ -303,64 +303,30 @@ function LiveGraph() {
 
 /* ─── Compound Growth Chart (Table) ─── */
 function CompoundGrowthChart({ G, GL }) {
-  const [status, setStatus] = useState("loading");
-  const [monthlyPL, setMonthlyPL] = useState([]);
+  // Hardcoded from live tracker — no network call, instant load on all devices
+  const ROWS = [
+    { yr:"2025", mon:"Jan",  pl: 19.13, beg: 10000.00,   unit: 500.00,   profit:  9565.00,  end:  19565.00, newYr:true,  final:false },
+    { yr:"2025", mon:"Feb",  pl: 14.99, beg: 19565.00,   unit: 978.25,   profit: 14671.46,  end:  34236.46, newYr:false, final:false },
+    { yr:"2025", mon:"Mar",  pl: 11.69, beg: 34236.46,   unit: 1711.82,  profit: 20001.18,  end:  54237.64, newYr:false, final:false },
+    { yr:"2025", mon:"Apr",  pl:  4.24, beg: 54237.64,   unit: 2711.88,  profit: 11490.37,  end:  65728.01, newYr:false, final:false },
+    { yr:"2025", mon:"May",  pl: -1.63, beg: 65728.01,   unit: 3286.40,  profit: -5356.83,  end:  60371.18, newYr:false, final:false },
+    { yr:"2025", mon:"Jun",  pl:  6.27, beg: 60371.18,   unit: 3018.56,  profit: 18926.37,  end:  79297.55, newYr:false, final:false },
+    { yr:"2025", mon:"Jul",  pl:  0.64, beg: 79297.55,   unit: 3964.88,  profit:  2537.52,  end:  81835.07, newYr:false, final:false },
+    { yr:"2025", mon:"Aug",  pl:  3.44, beg: 81835.07,   unit: 4091.75,  profit: 14075.63,  end:  95910.70, newYr:false, final:false },
+    { yr:"2025", mon:"Sep",  pl:  8.67, beg: 95910.70,   unit: 4795.54,  profit: 41577.52,  end: 137488.22, newYr:false, final:false },
+    { yr:"2025", mon:"Oct",  pl: 14.17, beg:137488.22,   unit: 5000.00,  profit: 70850.00,  end: 208338.22, newYr:false, final:false },
+    { yr:"2025", mon:"Nov",  pl:  1.92, beg:208338.22,   unit: 5000.00,  profit:  9600.00,  end: 217938.22, newYr:false, final:false },
+    { yr:"2025", mon:"Dec",  pl: -0.83, beg:217938.22,   unit: 5000.00,  profit: -4150.00,  end: 213788.22, newYr:false, final:false },
+    { yr:"2026", mon:"Jan",  pl: -4.63, beg:213788.22,   unit: 5000.00,  profit:-23150.00,  end: 190638.22, newYr:true,  final:false },
+    { yr:"2026", mon:"Feb",  pl:  6.34, beg:190638.22,   unit: 5000.00,  profit: 31700.00,  end: 222338.22, newYr:false, final:false },
+    { yr:"2026", mon:"Mar",  pl:  8.10, beg:222338.22,   unit: 5000.00,  profit: 40500.00,  end: 262838.22, newYr:false, final:false },
+    { yr:"2026", mon:"Apr",  pl: -3.48, beg:262838.22,   unit: 5000.00,  profit:-17400.00,  end: 245438.22, newYr:false, final:true  },
+  ];
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(SHEET_CSV_URL, { cache: "no-store" });
-        if (!res.ok) throw new Error();
-        const csv = await res.text();
-        const data = parseCSVForMonthly(csv);
-        if (!cancelled && data.length > 0) {
-          setMonthlyPL(data);
-          setStatus("ok");
-        } else if (!cancelled) setStatus("error");
-      } catch {
-        if (!cancelled) setStatus("error");
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  const finalBankroll = ROWS[ROWS.length - 1].end;
+  const totalReturn = ((finalBankroll - 10000) / 10000 * 100).toFixed(2);
 
-  if (status === "loading") {
-    return (
-      <div style={{ width:"100%", height:100, display:"flex", alignItems:"center", justifyContent:"center" }}>
-        <div style={{ fontSize:12, color:"rgba(16,185,129,0.45)", letterSpacing:".12em", textTransform:"uppercase" }}>
-          Loading growth data...
-        </div>
-      </div>
-    );
-  }
-  if (status === "error") {
-    return (
-      <div style={{ width:"100%", height:80, display:"flex", alignItems:"center", justifyContent:"center" }}>
-        <div style={{ fontSize:12, color:"rgba(255,100,100,0.6)" }}>Could not load live data</div>
-      </div>
-    );
-  }
-
-  const START = 10000;
-  const unitPct = 0.05;
-  const maxUnitDollar = 5000;
-  let bankroll = START;
-  const compRows = [];
-  monthlyPL.forEach((m, i) => {
-    const beginning = bankroll;
-    const unitDollar = Math.min(bankroll * unitPct, maxUnitDollar);
-    const profit = m.pl * unitDollar;
-    bankroll = bankroll + profit;
-    const isFinal = i === monthlyPL.length - 1;
-    const [mon, yr] = m.label.split(" ");
-    const prevYr = i > 0 ? monthlyPL[i-1].label.split(" ")[1] : null;
-    compRows.push({ mon, yr, beginning, unitDollar, pl: m.pl, profit, ending: bankroll, isFinal, isNewYear: yr !== prevYr });
-  });
-  const finalBankroll = bankroll;
-  const totalReturn = ((finalBankroll - START) / START * 100).toFixed(2);
-
-  const fmtMoney = (n) => {
+  const fmt = (n) => {
     const abs = Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return (n < 0 ? "-$" : "$") + abs;
   };
@@ -374,7 +340,7 @@ function CompoundGrowthChart({ G, GL }) {
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:20, flexWrap:"wrap" }}>
           <div style={{ fontSize:12, color:"#64748b" }}>Starting Bankroll <span style={{ fontWeight:700, color:"#e2e8f0", marginLeft:6 }}>$10,000</span></div>
-          <div style={{ fontSize:12, color:"#64748b" }}>Final: <span style={{ fontWeight:800, color:"#10b981" }}>{fmtMoney(finalBankroll)}</span></div>
+          <div style={{ fontSize:12, color:"#64748b" }}>Final: <span style={{ fontWeight:800, color:"#10b981" }}>{fmt(finalBankroll)}</span></div>
           <div style={{ fontSize:12, color:"#64748b" }}>Return: <span style={{ fontWeight:800, color:"#10b981" }}>+{totalReturn}%</span></div>
         </div>
       </div>
@@ -393,30 +359,30 @@ function CompoundGrowthChart({ G, GL }) {
             </tr>
           </thead>
           <tbody>
-            {compRows.map((row, i) => {
+            {ROWS.map((row, i) => {
               const pos = row.profit >= 0;
               const c = pos ? "#10b981" : "#f87171";
               return (
                 <React.Fragment key={i}>
-                  {row.isNewYear && i > 0 && (
+                  {row.newYr && i > 0 && (
                     <tr><td colSpan={8} style={{ padding:0, background:"#0a0d14", height:3, borderTop:"2px solid #2a2d3a", borderBottom:"2px solid #2a2d3a" }}/></tr>
                   )}
-                  <tr style={{ borderBottom:"1px solid #1e2435", background: row.isFinal ? "rgba(16,185,129,0.04)" : "transparent" }}
-                    onMouseEnter={e=>e.currentTarget.style.background=row.isFinal?"rgba(16,185,129,0.07)":"#1e2435"}
-                    onMouseLeave={e=>e.currentTarget.style.background=row.isFinal?"rgba(16,185,129,0.04)":"transparent"}>
+                  <tr style={{ borderBottom:"1px solid #1e2435", background: row.final ? "rgba(16,185,129,0.04)" : "transparent" }}
+                    onMouseEnter={e=>e.currentTarget.style.background=row.final?"rgba(16,185,129,0.07)":"#1e2435"}
+                    onMouseLeave={e=>e.currentTarget.style.background=row.final?"rgba(16,185,129,0.04)":"transparent"}>
                     <td style={{ padding:"9px 14px", fontSize:12, fontWeight:700, color:"#475569" }}>
-                      {row.isNewYear ? <span style={{ background:"#1e293b", borderRadius:4, padding:"2px 8px", fontSize:11 }}>{row.yr}</span> : ""}
+                      {row.newYr ? <span style={{ background:"#1e293b", borderRadius:4, padding:"2px 8px", fontSize:11 }}>{row.yr}</span> : ""}
                     </td>
                     <td style={{ padding:"9px 14px", fontSize:13, fontWeight:600, color:"#e2e8f0" }}>
                       {row.mon}
-                      {row.isFinal ? <span style={{ display:"block", fontSize:10, background:"#422006", color:"#f59e0b", borderRadius:3, padding:"1px 5px", fontWeight:700, marginTop:3, width:"fit-content" }}>so far</span> : ""}
+                      {row.final ? <span style={{ display:"block", fontSize:10, background:"#422006", color:"#f59e0b", borderRadius:3, padding:"1px 5px", fontWeight:700, marginTop:3, width:"fit-content" }}>so far</span> : ""}
                     </td>
-                    <td style={{ padding:"9px 14px", fontSize:12, color:c, textAlign:"right", fontWeight:600 }}>{fmtMoney(row.beginning)}</td>
+                    <td style={{ padding:"9px 14px", fontSize:12, color:c, textAlign:"right", fontWeight:600 }}>{fmt(row.beg)}</td>
                     <td style={{ padding:"9px 14px", fontSize:12, color:"#64748b", textAlign:"center" }}>5.00%</td>
-                    <td style={{ padding:"9px 14px", fontSize:12, color:"#94a3b8", textAlign:"right" }}>{fmtMoney(row.unitDollar)}</td>
-                    <td style={{ padding:"9px 14px", fontSize:12, fontWeight:600, color:c, textAlign:"right" }}>{row.pl >= 0 ? "+" : ""}{row.pl.toFixed(2)}</td>
-                    <td style={{ padding:"9px 14px", fontSize:12, fontWeight:600, color:c, textAlign:"right" }}>{pos ? "+" : ""}{fmtMoney(row.profit)}</td>
-                    <td style={{ padding:"9px 14px", fontSize:14, fontWeight:800, color:c, textAlign:"right" }}>{fmtMoney(row.ending)}</td>
+                    <td style={{ padding:"9px 14px", fontSize:12, color:"#94a3b8", textAlign:"right" }}>{fmt(row.unit)}</td>
+                    <td style={{ padding:"9px 14px", fontSize:12, fontWeight:600, color:c, textAlign:"right" }}>{pos?"+":""}{row.pl.toFixed(2)}</td>
+                    <td style={{ padding:"9px 14px", fontSize:12, fontWeight:600, color:c, textAlign:"right" }}>{pos?"+":""}{fmt(row.profit)}</td>
+                    <td style={{ padding:"9px 14px", fontSize:14, fontWeight:800, color:c, textAlign:"right" }}>{fmt(row.end)}</td>
                   </tr>
                 </React.Fragment>
               );
@@ -428,36 +394,6 @@ function CompoundGrowthChart({ G, GL }) {
   );
 }
 
-function parseCSVForMonthly(csv) {
-  const rows = csv.split("\n").map(r => r.split(",").map(c => c.replace(/^"|"$/g, "").trim()));
-  const MN_SHORT = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  let dataStart = -1;
-  for (let i = 0; i < rows.length; i++) {
-    if (rows[i][1] && rows[i][1].trim() === "1") { dataStart = i; break; }
-  }
-  if (dataStart < 0) return [];
-  const monthSums = {};
-  for (let r = dataStart; r < rows.length; r++) {
-    const row = rows[r];
-    if (!row[1] || !/^\d+$/.test(row[1].trim())) continue;
-    const num = parseInt(row[1].trim());
-    const dateStr = (row[2] || "").trim();
-    const pts2 = dateStr.split("/");
-    if (pts2.length !== 3) continue;
-    const dd = parseInt(pts2[0]), mm = parseInt(pts2[1]), yyyy = parseInt(pts2[2]);
-    if (isNaN(dd) || isNaN(mm) || isNaN(yyyy)) continue;
-    let effMm = mm, effYyyy = yyyy;
-    if (num === 161 && mm === 1 && yyyy === 2025) { effMm = 2; effYyyy = 2025; }
-    const wl = (row[8] || "").trim().toLowerCase();
-    if (wl !== "win" && wl !== "loss") continue;
-    const ret = parseFloat(row[9]);
-    if (isNaN(ret)) continue;
-    const mkey = effYyyy + "-" + (effMm < 10 ? "0" : "") + effMm;
-    if (!monthSums[mkey]) monthSums[mkey] = { label: MN_SHORT[effMm] + " " + effYyyy, pl: 0 };
-    monthSums[mkey].pl += ret;
-  }
-  return Object.keys(monthSums).sort().map(k => ({ label: monthSums[k].label, pl: Math.round(monthSums[k].pl * 100) / 100 }));
-}
 
 
 /* ─── FAQ Section ─── */
@@ -510,22 +446,19 @@ function FAQSection({ G, GL }) {
           </h2>
           <div style={{ width:72, height:2, borderRadius:99, background:`linear-gradient(90deg,transparent,${G},transparent)`, margin:"12px auto 0" }}/>
         </div>
-
         <div style={{ maxWidth:760, margin:"0 auto", display:"flex", flexDirection:"column", gap:12 }}>
           {faqs.map((faq, i) => {
             const isOpen = open === i;
             return (
-              <div key={i}
-                style={{ borderRadius:18, border:`1px solid ${isOpen ? "rgba(212,175,55,.35)" : "rgba(212,175,55,.14)"}`,
-                  background: isOpen ? "rgba(212,175,55,.06)" : "rgba(212,175,55,.03)",
-                  overflow:"hidden", transition:"border-color .2s, background .2s" }}>
-                <button
-                  onClick={() => setOpen(isOpen ? null : i)}
+              <div key={i} style={{ borderRadius:18, border:`1px solid ${isOpen ? "rgba(212,175,55,.35)" : "rgba(212,175,55,.14)"}`,
+                background: isOpen ? "rgba(212,175,55,.06)" : "rgba(212,175,55,.03)",
+                overflow:"hidden", transition:"border-color .2s, background .2s" }}>
+                <button onClick={() => setOpen(isOpen ? null : i)}
                   style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16,
                     padding:"20px 24px", background:"none", border:"none", cursor:"pointer", textAlign:"left" }}>
                   <span style={{ fontSize:"clamp(14px,1.6vw,17px)", fontWeight:700, color:"#fff", lineHeight:1.4 }}>{faq.q}</span>
                   <div style={{ width:28, height:28, borderRadius:"50%",
-                    background: isOpen ? `rgba(212,175,55,.2)` : "rgba(212,175,55,.08)",
+                    background: isOpen ? "rgba(212,175,55,.2)" : "rgba(212,175,55,.08)",
                     border:`1px solid ${isOpen ? "rgba(212,175,55,.5)" : "rgba(212,175,55,.2)"}`,
                     display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0,
                     transition:"all .2s", transform: isOpen ? "rotate(45deg)" : "rotate(0deg)" }}>
